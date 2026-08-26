@@ -17,6 +17,12 @@ modules:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
 
+  # Must run before the dnf module: pins 1Password's group GIDs so the RPM
+  # scriptlets setgid op and BrowserSupport to GIDs that match the live system.
+  - type: script
+    scripts:
+      - pin-1password-gids.sh
+
   # Converted from the rpm-ostree module: rpm-ostree cannot run inside the
   # build container on bootc/Fedora 43 bases ("This system was not booted via
   # libostree"), which failed every build since Dec 2025. dnf is the replacement.
