@@ -27,19 +27,21 @@ modules:
       copr:
         - atim/starship
       files:
-        - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+        # tailscale.repo dropped: the Aurora base now ships tailscale 1.102.3,
+        # which matches upstream stable, so the extra repo is redundant.
         - 1password.repo
     install:
       packages:
         - micro
         - starship
-        - git-credential-manager
-        - tailscale
-        - zsh
         - firefox
         - firefox-langpacks
         - 1password
         - 1password-cli
+        # Removed 2026-08-26, all of which broke the dnf transaction:
+        #   tailscale, zsh -- already present in the Aurora DX base image
+        #   git-credential-manager -- no longer in any configured repo, and it
+        #     was neither installed nor set as git's credential.helper
 
   # Bake an empty /nix into the image so the Determinate Nix installer can
   # bind-mount onto it. See docs/nix-on-aurora.md for why this is necessary.
