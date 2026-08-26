@@ -17,31 +17,29 @@ modules:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
 
-  - type: rpm-ostree
+  # Converted from the rpm-ostree module: rpm-ostree cannot run inside the
+  # build container on bootc/Fedora 43 bases ("This system was not booted via
+  # libostree"), which failed every build since Dec 2025. dnf is the replacement.
+  # optfix is intentionally gone -- BlueBuild CLI >= v0.9.23 applies it automatically.
+  # For RPM Fusion, this module supports `nonfree: rpmfusion` under repos.
+  - type: dnf
     repos:
-      - https://copr.fedorainfracloud.org/coprs/atim/starship/repo/fedora-%OS_VERSION%/atim-starship-fedora-%OS_VERSION%.repo
-      - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-      - 1password.repo
-    optfix:
-      - 1Password
+      copr:
+        - atim/starship
+      files:
+        - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
+        - 1password.repo
     install:
-      - micro
-      - starship
-      - git-credential-manager
-      - tailscale
-      - zsh
-      - firefox
-      - firefox-langpacks
-      - 1password
-      - 1password-cli
-      # Found the answer to this here: https://rpmfusion.org/Configuration
-      # - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-%OS_VERSION%.noarch.rpm
-      # - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-%OS_VERSION%.noarch.rpm
-    # remove:
-    # example: removing firefox (in favor of the flatpak)
-    # "firefox" is the main package, "firefox-langpacks" is a dependency
-    # - firefox
-    # - firefox-langpacks # also remove firefox dependency (not required for all packages, this is a special case)
+      packages:
+        - micro
+        - starship
+        - git-credential-manager
+        - tailscale
+        - zsh
+        - firefox
+        - firefox-langpacks
+        - 1password
+        - 1password-cli
 
   # Bake an empty /nix into the image so the Determinate Nix installer can
   # bind-mount onto it. See docs/nix-on-aurora.md for why this is necessary.
