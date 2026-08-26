@@ -49,7 +49,9 @@ modules:
     scripts:
       - create-nix-dir.sh
 
-  - type: default-flatpaks
+  # Pinned to @v1: default-flatpaks@v2 is a breaking rewrite and this config
+  # is v1-shaped. Migrate deliberately later rather than as a build fix.
+  - type: default-flatpaks@v1
     notify: true # Send notification after install/uninstall is finished (true/false)
     system:
       # If no repo information is specified, Flathub will be used by default
