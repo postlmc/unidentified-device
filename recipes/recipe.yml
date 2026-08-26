@@ -35,13 +35,19 @@ modules:
       - 1password
       - 1password-cli
       # Found the answer to this here: https://rpmfusion.org/Configuration
-      - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-%OS_VERSION%.noarch.rpm
-      - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-%OS_VERSION%.noarch.rpm
+      # - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-%OS_VERSION%.noarch.rpm
+      # - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-%OS_VERSION%.noarch.rpm
     # remove:
     # example: removing firefox (in favor of the flatpak)
     # "firefox" is the main package, "firefox-langpacks" is a dependency
     # - firefox
     # - firefox-langpacks # also remove firefox dependency (not required for all packages, this is a special case)
+
+  # Bake an empty /nix into the image so the Determinate Nix installer can
+  # bind-mount onto it. See docs/nix-on-aurora.md for why this is necessary.
+  - type: script
+    scripts:
+      - create-nix-dir.sh
 
   - type: default-flatpaks
     notify: true # Send notification after install/uninstall is finished (true/false)
