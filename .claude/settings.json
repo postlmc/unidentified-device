@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./cosign.key)",
+      "Read(./cosign.private)",
+      "Read(./*.key)"
+    ]
+  },
+  "sandbox": {
+    "filesystem": {
+      "denyRead": [
+        "./cosign.key",
+        "./cosign.private"
+      ]
+    }
+  }
+}

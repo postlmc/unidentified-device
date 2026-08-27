@@ -7,12 +7,22 @@ on:
   push:
     branches:
       - main
-    paths-ignore: # don't rebuild if only documentation has changed
+    paths-ignore: # don't rebuild when nothing that lands in the image changed
       - "**.md"
+      - ".claude/**"
+      - ".github/CODEOWNERS"
+      - ".github/dependabot.yml"
+      - ".gitignore"
+      - "LICENSE"
 
   pull_request:
-    paths-ignore: # don't rebuild a PR if only documentation has changed
+    paths-ignore: # don't rebuild a PR when nothing that lands in the image changed
       - "**.md"
+      - ".claude/**"
+      - ".github/CODEOWNERS"
+      - ".github/dependabot.yml"
+      - ".gitignore"
+      - "LICENSE"
 
   workflow_dispatch: # allow manually triggering builds
 concurrency:
