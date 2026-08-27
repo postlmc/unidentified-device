@@ -87,11 +87,71 @@ containers — were each rejected.
 > state from an earlier Nix attempt. Move `~/.local/state/nix`, `~/.local/share/nix`, `~/.cache/nix` and `~/.nix-profile` aside and
 > run it again.
 
+## 1Password
+
+The image installs the 1Password desktop app, the browser extension's native-messaging host, and `op` — all as RPMs, not flatpaks,
+so the browser bridge is not sandboxed away.
+
+### Pinned group GIDs (important)
+
+1Password setgids `1Password-BrowserSupport` and `/usr/bin/op` to the `onepassword` and `onepassword-cli` groups, and the desktop
+app verifies connecting peers against those groups via `SO_PEERCRED`. The RPM scriptlets create the groups with whatever GID is next
+free **in the build container**, which will not match the running host — and ostree never merges new groups into a locally-modified
+`/etc/group`. The result is a setgid bit pointing at a GID that means something else, and the app rejects the peer with:
+
+```text
+peer was not in the correct application group, rejecting remote
+```
+
+which shows up as the browser extension demanding its own sign-in.
+
+[`files/system/usr/lib/sysusers.d/1password.conf`](files/system/usr/lib/sysusers.d/1password.conf) pins the GIDs, and
+[`files/scripts/pin-1password-gids.sh`](files/scripts/pin-1password-gids.sh) applies them **before** the dnf module so the RPM
+scriptlets adopt them rather than inventing their own. Do not remove either without understanding the above.
+
+On an **existing** host the groups already exist at the wrong GIDs, and `sysusers` will not renumber them, so a one-time migration
+is needed:
+
+```shell
+sudo groupmod -g 1001 onepassword
+sudo groupmod -g 944 onepassword-cli
+```
+
+Verify with — these two numbers must be equal:
+
+```shell
+stat -c %g /usr/lib/opt/1Password/1Password-BrowserSupport   # setgid GID
+getent group onepassword                                     # group GID
+```
+
+### Known issue: CLI desktop app integration does not work
+
+`op` cannot use "Integrate with 1Password CLI" on this image. Even with `/usr/bin/op` setgid to `onepassword-cli` and the GIDs
+matching exactly, the app rejects it:
+
+```text
+[op-sys-info/src/process_information/linux.rs:409] invalid group attempted to connect
+Failed to accept new connection.: PipeAuthError(NoCreds)
+```
+
+The same pipe accepts `1Password-BrowserSupport` at the `onepassword` GID in the same session, so the mechanism works — only the CLI
+group is refused. Ruled out: PTY and session variables, `onepassword-cli` group membership, toggling the setting, and app start
+ordering. See also the open upstream report [blue-build/modules#77](https://github.com/blue-build/modules/issues/77).
+
+**Workaround** — turn *off* "Integrate with 1Password CLI" in the app, then authenticate `op` directly:
+
+```shell
+op account add        # sign-in address, email, Secret Key, password
+eval $(op signin)
+```
+
+Sessions expire on inactivity, so `eval $(op signin)` is needed per shell.
+
 ## ISO
 
-If build on Fedora Atomic, you can generate an offline ISO with the instructions available
-[here](https://blue-build.org/learn/universal-blue/#fresh-install-from-an-iso). These ISOs cannot unfortunately be distributed on
-GitHub for free due to large sizes, so for public projects something else has to be used for hosting.
+If build on Fedora Atomic, you can generate an offline ISO using the
+[BlueBuild's ISO guide](https://blue-build.org/learn/universal-blue/#fresh-install-from-an-iso). These ISOs cannot unfortunately be
+distributed on GitHub for free due to large sizes, so for public projects something else has to be used for hosting.
 
 ## Verification
 
