@@ -17,33 +17,47 @@ modules:
       - source: system
         destination: / # copies files/system/* (* means everything inside it) into your image's root folder /
 
-  - type: rpm-ostree
-    repos:
-      - https://copr.fedorainfracloud.org/coprs/atim/starship/repo/fedora-%OS_VERSION%/atim-starship-fedora-%OS_VERSION%.repo
-      - https://pkgs.tailscale.com/stable/fedora/tailscale.repo
-      - 1password.repo
-    optfix:
-      - 1Password
-    install:
-      - micro
-      - starship
-      - git-credential-manager
-      - tailscale
-      - zsh
-      - firefox
-      - firefox-langpacks
-      - 1password
-      - 1password-cli
-      # Found the answer to this here: https://rpmfusion.org/Configuration
-      - https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-%OS_VERSION%.noarch.rpm
-      - https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-%OS_VERSION%.noarch.rpm
-    # remove:
-    # example: removing firefox (in favor of the flatpak)
-    # "firefox" is the main package, "firefox-langpacks" is a dependency
-    # - firefox
-    # - firefox-langpacks # also remove firefox dependency (not required for all packages, this is a special case)
+  # Must run before the dnf module: pins 1Password's group GIDs so the RPM
+  # scriptlets setgid op and BrowserSupport to GIDs that match the live system.
+  - type: script
+    scripts:
+      - pin-1password-gids.sh
 
-  - type: default-flatpaks
+  # Converted from the rpm-ostree module: rpm-ostree cannot run inside the
+  # build container on bootc/Fedora 43 bases ("This system was not booted via
+  # libostree"), which failed every build since Dec 2025. dnf is the replacement.
+  # optfix is intentionally gone -- BlueBuild CLI >= v0.9.23 applies it automatically.
+  # For RPM Fusion, this module supports `nonfree: rpmfusion` under repos.
+  - type: dnf
+    repos:
+      copr:
+        - atim/starship
+      files:
+        # tailscale.repo dropped: the Aurora base now ships tailscale 1.102.3,
+        # which matches upstream stable, so the extra repo is redundant.
+        - 1password.repo
+    install:
+      packages:
+        - micro
+        - starship
+        - firefox
+        - firefox-langpacks
+        - 1password
+        - 1password-cli
+        # Removed 2026-08-26, all of which broke the dnf transaction:
+        #   tailscale, zsh -- already present in the Aurora DX base image
+        #   git-credential-manager -- no longer in any configured repo, and it
+        #     was neither installed nor set as git's credential.helper
+
+  # Bake an empty /nix into the image so the Determinate Nix installer can
+  # bind-mount onto it. See docs/nix-on-aurora.md for why this is necessary.
+  - type: script
+    scripts:
+      - create-nix-dir.sh
+
+  # Pinned to @v1: default-flatpaks@v2 is a breaking rewrite and this config
+  # is v1-shaped. Migrate deliberately later rather than as a build fix.
+  - type: default-flatpaks@v1
     notify: true # Send notification after install/uninstall is finished (true/false)
     system:
       # If no repo information is specified, Flathub will be used by default

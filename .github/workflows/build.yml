@@ -11,6 +11,9 @@ on:
       - "**.md"
 
   pull_request:
+    paths-ignore: # don't rebuild a PR if only documentation has changed
+      - "**.md"
+
   workflow_dispatch: # allow manually triggering builds
 concurrency:
   # only run one build at a time
