@@ -32,6 +32,7 @@ modules:
     repos:
       copr:
         - atim/starship
+        - scottames/ghostty
       files:
         # tailscale.repo dropped: the Aurora base now ships tailscale 1.102.3,
         # which matches upstream stable, so the extra repo is redundant.
@@ -40,6 +41,7 @@ modules:
       packages:
         - micro
         - starship
+        - ghostty
         - firefox
         - firefox-langpacks
         - 1password
