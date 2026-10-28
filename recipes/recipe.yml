@@ -51,6 +51,15 @@ modules:
         #   git-credential-manager -- no longer in any configured repo, and it
         #     was neither installed nor set as git's credential.helper
 
+  # Distrust every eMudhra (emSign) root and AAA Certificate Services after the
+  # 2026-10 leak of 16 intermediates chaining to emSign Root TLS CA - G3,
+  # emSign Root CS CA - G3, and AAA Certificate Services. The certificates are
+  # in files/system/etc/pki/ca-trust/source/blocklist/; this regenerates the
+  # extracted bundles so the blocklist takes effect.
+  - type: script
+    scripts:
+      - rebuild-ca-trust.sh
+
   # Bake an empty /nix into the image so the Determinate Nix installer can
   # bind-mount onto it. See docs/nix-on-aurora.md for why this is necessary.
   - type: script
