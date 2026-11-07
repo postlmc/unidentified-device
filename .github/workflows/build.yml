@@ -58,3 +58,27 @@ jobs:
 
           # enabled by default, disable if your image is small and you want faster builds
           maximize_build_space: true
+
+  # Tag the commit that was built with the same date the image was tagged with
+  # (YYYYMMDD), so a package version like ghcr.io/postlmc/unidentified-device:20261106
+  # maps to a git tag of the same name. A second build on the same day moves both
+  # the image tag and this git tag, so the two always agree.
+  tag:
+    name: Tag Built Commit
+    needs: bluebuild
+    if: ${{ github.event_name != 'pull_request' && needs.bluebuild.result == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Tag commit with the image date tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(date -u +%Y%m%d)"
+          ref="refs/tags/${tag}"
+          if gh api "repos/${GITHUB_REPOSITORY}/git/${ref}" > /dev/null 2>&1; then
+            gh api -X PATCH "repos/${GITHUB_REPOSITORY}/git/${ref}" -f sha="${GITHUB_SHA}" -F force=true
+          else
+            gh api -X POST "repos/${GITHUB_REPOSITORY}/git/refs" -f ref="${ref}" -f sha="${GITHUB_SHA}"
+          fi
