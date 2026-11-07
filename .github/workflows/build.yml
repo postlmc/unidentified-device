@@ -1,9 +1,11 @@
 name: bluebuild
 on:
-  # schedule:
-  #   - cron:
-  #       "00 06 * * *" # build at 06:00 UTC every day
-  # (20 minutes after last ublue images start building)
+  schedule:
+    # Weekly rebuild so base-image and Fedora security updates reach the host even
+    # when nothing in this repo changed (Sundays 06:00 UTC, after the ublue base
+    # images finish their daily build). Every build is also tagged by date
+    # (YYYYMMDD and YYYYMMDD-<fedora version>) next to latest.
+    - cron: "0 6 * * 0"
   push:
     branches:
       - main
