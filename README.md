@@ -47,14 +47,20 @@ The `latest` tag will automatically point to the latest build. That build will s
 
 Builds from branches and commits are published too, which is useful for testing a change before merging:
 
-| Tag      | Example                                                           |
-|----------|-------------------------------------------------------------------|
-| `latest` | `ghcr.io/postlmc/unidentified-device:latest`                      |
-| branch   | `ghcr.io/postlmc/unidentified-device:br-feature_nix-store-dir-44` |
-| commit   | `ghcr.io/postlmc/unidentified-device:cd6543a-44`                  |
+| Tag      | Example                                                            |
+|----------|--------------------------------------------------------------------|
+| `latest` | `ghcr.io/postlmc/unidentified-device:latest`                       |
+| branch   | `ghcr.io/postlmc/unidentified-device:br-<branch-name>-44`          |
+| commit   | `ghcr.io/postlmc/unidentified-device:<short-sha>-44`               |
+| date     | `ghcr.io/postlmc/unidentified-device:20261106` (and `20261106-44`) |
 
-The trailing number is the Fedora major version. Branch builds are triggered manually with `gh workflow run build.yml --ref
-<branch>`; pushes to `main` build automatically.
+The trailing number is the Fedora major version. Branch builds are triggered manually with
+`gh workflow run build.yml --ref <branch>`. Pushes to `main` build automatically, and the image is
+rebuilt weekly (Sundays 06:00 UTC) even when nothing here changed.
+
+Every build on `main` also creates a git tag named like its date tag (`20261106`), pointing at the
+commit that was built, so an image version maps to a commit. A second build on the same day moves
+both the image tag and the git tag.
 
 ## Nix and devbox
 
