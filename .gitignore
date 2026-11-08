@@ -2,3 +2,5 @@ cosign.key
 cosign.private
 /Containerfile
 rebuild/hardware.env
+*.iso
+*.iso-CHECKSUM
