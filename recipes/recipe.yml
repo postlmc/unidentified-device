@@ -51,6 +51,17 @@ modules:
         #   git-credential-manager -- no longer in any configured repo, and it
         #     was neither installed nor set as git's credential.helper
 
+  # Suspend is masked because the NVIDIA open kernel modules fault on resume:
+  # nvEvoDisableVblankSemControl dereferences NULL inside systemd-sleep and takes
+  # the session down. This is a workaround, not a fix -- drop it once the driver
+  # handles resume correctly.
+  # The systemd module cannot express this. It offers enabled/disabled only, and
+  # sleep.target is pulled in by logind as a dependency rather than being started
+  # because it is enabled, so disabling it achieves nothing. It has to be masked.
+  - type: script
+    scripts:
+      - mask-sleep-targets.sh
+
   # Distrust every eMudhra (emSign) root and AAA Certificate Services after the
   # 2026-10 leak of 16 intermediates chaining to emSign Root TLS CA - G3,
   # emSign Root CS CA - G3, and AAA Certificate Services. The certificates are
