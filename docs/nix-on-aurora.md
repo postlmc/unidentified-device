@@ -38,15 +38,35 @@ to a locally generated initramfs, which slows updates and risks interacting badl
 
 ## What We Actually Do
 
-Create an empty `/nix` at image build time (`files/scripts/create-nix-dir.sh`).
+Create an empty `/nix` at image build time (`files/scripts/create-nix-dir.sh`). That is the entire contribution of the image.
 
-`/nix` only ever needs to be a **mount point**. The Determinate installer creates a `nix.mount` unit that bind-mounts persistent
-storage onto it at boot. Once the dirent exists in the ostree commit, upstream Nix installs and runs normally — no wrapper scripts,
-no custom systemd units, no store relocation.
+`/nix` only ever needs to be a **mount point**. Once the dirent exists in the ostree commit, the Determinate installer runs normally
+and does the rest itself: it selects its `ostree` planner, persists the store at `/var/home/nix`, and writes a `nix.mount` unit that
+bind-mounts the latter onto the former at boot. No wrapper scripts, no store relocation, and nothing to hand-write.
+
+"Nothing to hand-write" is not the same as "nothing exists", and the difference matters. The installer creates five units under
+`/etc/systemd/system/`: `nix.mount`, `nix-daemon.service`, `nix-daemon.socket`, `nix-directory.service`, and
+`determinate-nixd.socket`. None of them come from the image.
 
 This supersedes the earlier wrapper-based approach, which hand-built that bind-mount (`/run/nix/store` -> `/var/lib/nix/store`) with
 eight files of wrappers and units. That design was correct in shape; it is simply now redundant, because the installer does it
 upstream.
+
+## What Lives Where
+
+Only `/nix` itself comes from the image. Everything else that makes Nix work is host state created at install time:
+
+| Component          | Location               | Persists In      | In the Image |
+|--------------------|------------------------|------------------|--------------|
+| `/nix` mount point | `/nix`                 | ostree commit    | Yes          |
+| Five systemd units | `/etc/systemd/system/` | `/etc`           | No           |
+| `determinate-nixd` | `/usr/local/bin/`      | `/var/usrlocal`  | No           |
+| `devbox`           | `/usr/local/bin/`      | `/var/usrlocal`  | No           |
+| Nix store          | `/var/home/nix`        | `home` subvolume | No           |
+
+Two consequences follow. The store lives inside the **home** subvolume, so anything that wipes or relocates `/home` takes the Nix
+store with it. And a rebuilt host needs the installer re-run, because rebasing to this image restores the mount point and nothing
+else.
 
 ## Setup After Rebasing to an Image with /nix
 
@@ -56,10 +76,21 @@ nix --version
 devbox version
 ```
 
+No planner argument is needed. The installer detects the ostree system on its own, and `/nix/receipt.json` on this host records
+`"planner": "ostree"` with `"persistence": "/var/home/nix"`. Verified 2026-08-27 running Determinate Nix 3.22.2 on Nix 2.35.2.
+
 ## Known Risk
 
-SELinux. It is the stated reason Universal Blue refuses to support Nix, and it is the most likely thing to break. If Nix misbehaves,
-check `ausearch -m avc -ts recent` before assuming a Nix bug.
+SELinux, and the risk is more real than "it currently works" makes it sound. It is the stated reason Universal Blue refuses to
+support Nix.
+
+Verified 2026-08-27: SELinux is `Enforcing`, and both Nix and devbox work. But **no SELinux policy is installed for Nix**. `/nix`
+and `/nix/store` are both labelled `default_t`, the generic fallback, which means no file-context rule exists for the store at all.
+It works because nothing currently objects to `default_t`, not because the labelling is correct. Listing policy modules requires
+root and was not checked; the label evidence alone is what this rests on.
+
+So a policy tightening upstream, or any confined domain that needs to execute out of the store, can break this without warning. If
+Nix misbehaves, check `ausearch -m avc -ts recent` before assuming a Nix bug.
 
 ## References
 

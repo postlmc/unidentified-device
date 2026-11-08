@@ -73,8 +73,9 @@ After rebasing, install Nix the ordinary way:
 curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install
 ```
 
-The installer detects the ostree system, creates `/var/home/nix`, bind-mounts it onto `/nix`, and installs an SELinux policy. The
-root filesystem stays read-only. Then:
+The installer detects the ostree system on its own and selects its `ostree` planner, which creates `/var/home/nix` and bind-mounts
+it onto `/nix`. The root filesystem stays read-only. Note that no SELinux policy is installed for Nix -- `/nix` and `/nix/store` are
+labelled `default_t`. See [`docs/nix-on-aurora.md`](docs/nix-on-aurora.md). Then:
 
 ```shell
 devbox init && devbox add jq && devbox run -- jq --version
