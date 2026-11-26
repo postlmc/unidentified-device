@@ -1,0 +1,20 @@
+#!/usr/bin/bash
+# Start the llama.cpp server and fail unless the GPU is actually in use.
+set -euo pipefail
+min_mib=6000   # a 14B Q4 model offloaded to the GPU uses well over this
+
+fail() { echo "unid-llm-up: $1" >&2; systemctl --user stop llama-server.service || true; exit "${2:-1}"; }
+
+systemctl --user start llama-server.service
+for _ in $(seq 1 150); do
+    curl -fs http://127.0.0.1:8080/health >/dev/null && break
+    sleep 2
+done
+curl -fs http://127.0.0.1:8080/health >/dev/null || fail "server not healthy after 300 s"
+
+if podman logs llama-server 2>&1 | grep -qE 'no CUDA-capable device|no usable GPU found'; then
+    fail "llama.cpp fell back to CPU (no GPU)" 2
+fi
+used=$(nvidia-smi --query-compute-apps=used_memory --format=csv,noheader,nounits | sort -n | tail -1)
+[ "${used:-0}" -ge "$min_mib" ] || fail "GPU memory in use is ${used:-0} MiB, expected at least $min_mib" 2
+echo "unid-llm-up: ok, GPU in use (${used} MiB), listening on 127.0.0.1:8080"

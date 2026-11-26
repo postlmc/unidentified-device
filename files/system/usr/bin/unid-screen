@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+# Deterministic secret gate: scan a file or directory with gitleaks. Exit 0 = clean, 1 = findings,
+# anything else = the scan itself failed (treat as NOT clean). Output is redacted.
+set -euo pipefail
+[ $# -eq 1 ] || { echo "usage: unid-screen <file-or-directory>" >&2; exit 64; }
+target=$(realpath "$1")
+exec podman run --rm --network none --security-opt label=disable \
+    -v "$target":/scan:ro \
+    ghcr.io/gitleaks/gitleaks:v8.30.1 dir /scan --redact --no-banner --exit-code 1

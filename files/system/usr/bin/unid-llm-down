@@ -1,0 +1,2 @@
+#!/usr/bin/bash
+systemctl --user stop llama-server.service
