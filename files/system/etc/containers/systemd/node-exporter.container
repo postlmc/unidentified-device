@@ -1,0 +1,29 @@
+# Prometheus node_exporter for the NAS Prometheus (ds918plus). Host network and PID so it sees the
+# host itself, as on the NAS (ds918plus/node-exporter). Rootful, started at boot.
+#
+# Listens on all interfaces, port 9100, no authentication, like the other boxes. SecurityLabelDisable is
+# required for the read-only bind mount of the host root under SELinux.
+#
+# GPU numbers come from the textfile collector: unid-gpu-metrics.timer writes
+# /var/lib/node_exporter/textfile/unid_gpu.prom every 15 s.
+[Unit]
+Description=Prometheus node_exporter
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+ContainerName=node-exporter
+Image=quay.io/prometheus/node-exporter:v1.13.1@sha256:011e2d12c5bff759b90804bda642664775d7b4b127bf5148539bb82d3f590bb7
+Network=host
+PodmanArgs=--pid=host
+SecurityLabelDisable=true
+Volume=/:/host:ro,rslave
+Volume=/var/lib/node_exporter/textfile:/textfile:ro
+Exec=--path.rootfs=/host --web.listen-address=:9100 --collector.textfile.directory=/textfile
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
