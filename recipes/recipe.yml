@@ -71,6 +71,13 @@ modules:
     scripts:
       - rebuild-ca-trust.sh
 
+  # Metrics for the NAS Prometheus: node_exporter is a Quadlet (files/system/etc/containers/systemd/)
+  # that starts itself through its [Install] section; this timer feeds it the GPU numbers.
+  - type: systemd
+    system:
+      enabled:
+        - unid-gpu-metrics.timer
+
   # Bake an empty /nix into the image so the Determinate Nix installer can
   # bind-mount onto it. See docs/nix-on-aurora.md for why this is necessary.
   - type: script
