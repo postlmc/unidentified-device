@@ -12,8 +12,9 @@ Description=llama.cpp server (GPU, loopback only)
 
 [Container]
 ContainerName=llama-server
-# TODO: pin to a digest (Image=ghcr.io/ggml-org/llama.cpp@sha256:...) after the first pull.
-Image=ghcr.io/ggml-org/llama.cpp:server-cuda
+# Pinned by digest (the tag moves daily); the digest wins over the tag. Not yet run on this host:
+# the 2026-11-25 trial used an earlier server-cuda build. Bump deliberately, then rerun unid-llm-up.
+Image=ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:2855fd7d0f5781e289a8108c3abd0744d19621314641b97421c038be836ed373
 AddDevice=nvidia.com/gpu=all
 SecurityLabelDisable=true
 PublishPort=127.0.0.1:8080:8080
